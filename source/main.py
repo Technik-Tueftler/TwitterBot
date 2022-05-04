@@ -34,8 +34,8 @@ def main() -> None:
     liked_tweets = client.get_liked_tweets(id=1260876463345188864)
     print(liked_tweets)"""
 
-    """tweets = client.get_users_tweets(id=1260876463345188864, max_results=5)
-    print(tweets)"""
+    tweets = client.get_users_tweets(id=1260876463345188864, max_results=5)
+    print(tweets)
 
 
 if __name__ == "__main__":
