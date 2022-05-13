@@ -20,4 +20,4 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Test the code with Unittest
       run: |
-        python -m unittest .\tests\message_handler_test.py
+        python -m unittest tests/message_handler_test.py
