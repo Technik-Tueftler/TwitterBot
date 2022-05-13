@@ -9,9 +9,10 @@ from sqlalchemy_utils import database_exists, create_database
 
 Base = declarative_base()
 CONNECTOR = os.getenv("DB_CONNECTOR")
+DB_CONNECTION_VALID = False
 
 
-class Tweets(Base):
+class Tweets(Base):  # pylint: disable=too-few-public-methods
     __tablename__ = 'tweets'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     input_timestamp = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=False), nullable=False)
@@ -19,28 +20,12 @@ class Tweets(Base):
     comment = sqlalchemy.Column(sqlalchemy.String(500))
 
 
-class TwitterUser(Base):
+class TwitterUser(Base):  # pylint: disable=too-few-public-methods
     __tablename__ = 'twitterUser'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     input_timestamp = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=False), nullable=False)
     twitter_user_id = sqlalchemy.Column(sqlalchemy.Integer)
     comment = sqlalchemy.Column(sqlalchemy.String(500))
-
-
-try:
-    engine = create_engine(CONNECTOR)
-    if not database_exists(engine.url):
-        create_database(engine.url)
-    Base.metadata.create_all(engine)
-    engine.dispose()
-
-except sqlalchemy.exc.OperationalError as err:
-    print(f"ERROR: No connection to the database is possible. Aborted with error: [{err}]. "
-          f"Please check DB_CONNECTOR.")
-    engine.dispose()
-
-except sqlalchemy.exc.ProgrammingError as err:
-    print(f"ERROR: unexpected error: [{err}].")
 
 
 @dataclass
@@ -64,6 +49,25 @@ class SQLAlchemyConnectionManager:
     def add(self, data: Tweets | TwitterUser):
         self.session.add(data)
         self.session.commit()
+
+
+def init() -> None:
+    global DB_CONNECTION_VALID  # pylint: disable=global-statement
+    try:
+        engine = create_engine(CONNECTOR)
+        if not database_exists(engine.url):
+            create_database(engine.url)
+        Base.metadata.create_all(engine)
+        engine.dispose()
+        DB_CONNECTION_VALID = True
+
+    except sqlalchemy.exc.OperationalError as err:
+        print(f"ERROR: No connection to the database is possible. Aborted with error: [{err}]. "
+              f"Please check DB_CONNECTOR.")
+        engine.dispose()
+
+    except sqlalchemy.exc.ProgrammingError as err:
+        print(f"ERROR: unexpected error: [{err}].")
 
 
 def main() -> None:

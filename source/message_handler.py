@@ -1,11 +1,39 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 import os
 import time
 import datetime
 import schedule
 import tweepy
+from source import db
+import re
+
+MESSAGE_PATTERN = r"^#?bot\s(.*)\s(https:.*)"
+TWEET_URL_PATTERN = r"^(https://twitter.com/)(.+)(/status/)(\d+)$"
+
+
+def decompose_tweet_url(tweet_url: str) -> dict:
+    result_return = {"found_match": False,
+                     "twitter_user_name": None,
+                     "tweet_id": None}
+    result = re.match(TWEET_URL_PATTERN, tweet_url)
+    if result is not None:
+        result_return["twitter_user_name"] = result.groups()[1]
+        result_return["tweet_id"] = result.groups()[3]
+        result_return["found_match"] = True
+    return result_return
+
+
+def analyze_message(tweet_text: str) -> dict:
+    result_return = {"found_match": False,
+                     "message": None,
+                     "url": None}
+    result = re.match(MESSAGE_PATTERN, tweet_text)
+    if result is not None:
+        result_return["message"] = result.groups()[0]
+        result_return["url"] = result.groups()[1]
+        result_return["found_match"] = True
+    return result_return
 
 
 def message_handler(communication_data: dict) -> None:
@@ -38,7 +66,6 @@ def check_and_verify_env_variables() -> dict:
         print("Not all env variable are defined. Please check the documentation and add all twitter"
               "authentication information.")
     try:
-
         _ = datetime.datetime.strptime(os.getenv("schedule_time_every_day"), "%H:%M")
         environment_data["schedule_time_every_day"] = os.getenv("schedule_time_every_day")
         environment_data["all_verified"] &= True
@@ -62,7 +89,9 @@ def main(env_data: dict) -> None:
 
 
 if __name__ == "__main__":
-    print("Start Twitter message handler")
-    verified_env_data = check_and_verify_env_variables()
-    if verified_env_data["all_verified"] is not False:
-        main(verified_env_data)
+    db.init()
+    if db.DB_CONNECTION_VALID is True:
+        print("Start Twitter message handler")
+        verified_env_data = check_and_verify_env_variables()
+        if verified_env_data["all_verified"] is not False:
+            main(verified_env_data)
