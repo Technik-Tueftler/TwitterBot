@@ -17,9 +17,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pylint
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        pip install sqlalchemy-utils
     - name: Test the code with Unittest
       run: |
         python -m unittest tests\message_handler_test.py
+      working-directory: ./TwitterBot
