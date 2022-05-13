@@ -21,4 +21,3 @@ jobs:
     - name: Test the code with Unittest
       run: |
         python -m unittest tests\message_handler_test.py
-      working-directory: ./TwitterBot
