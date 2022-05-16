@@ -1,18 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+Main function to filter private messages in twitter by a keyword and then write this information to
+the database. The handler becomes active regularly after a set time and reads all messages. The main
+function should run later in the docker container.
+"""
 import os
 import time
 import datetime
+import re
 import schedule
 import tweepy
 from source import db
-import re
 
 MESSAGE_PATTERN = r"^#?bot\s(.*)\s(https:.*)"
 TWEET_URL_PATTERN = r"^(https://twitter.com/)(.+)(/status/)(\d+)$"
 
 
 def decompose_tweet_url(tweet_url: str) -> dict:
+    """
+    Filter and extract the tweet url by name and id
+    :param tweet_url: Complete url of the tweet in a str
+    :return: Dictionary with information with username, tweet id and if results were found.
+    """
     result_return = {"found_match": False,
                      "twitter_user_name": None,
                      "tweet_id": None}
@@ -25,6 +35,11 @@ def decompose_tweet_url(tweet_url: str) -> dict:
 
 
 def analyze_message(tweet_text: str) -> dict:
+    """
+    Analyze message and check keyword and extract information.
+    :param tweet_text: Complete message in a str
+    :return: Dictionary with information with message, url and if results were found.
+    """
     result_return = {"found_match": False,
                      "message": None,
                      "url": None}
@@ -37,11 +52,16 @@ def analyze_message(tweet_text: str) -> dict:
 
 
 def message_handler(communication_data: dict) -> None:
+    """
+    Called regularly to fetch and process all messages from twitter.
+    :param communication_data: Dictionary with app information.
+    :return: None
+    """
     auth = tweepy.OAuth1UserHandler(
-        os.getenv("consumer_key"),
-        os.getenv("consumer_secret"),
-        os.getenv("access_token"),
-        os.getenv("access_token_secret"))
+        communication_data["consumer_key"],
+        communication_data["consumer_secret"],
+        communication_data["access_token"],
+        communication_data["access_token_secret"])
     api = tweepy.API(auth)
     try:
         api.verify_credentials()
@@ -81,6 +101,11 @@ def check_and_verify_env_variables() -> dict:
 
 
 def main(env_data: dict) -> None:
+    """
+    Scheduling function for regular call.
+    :param env_data:
+    :return:
+    """
     schedule.every().day.at(env_data["schedule_time_every_day"]).do(message_handler, env_data)
     print("Env data are verified, start job.")
     while True:

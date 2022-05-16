@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Collection of functions for handling with database.
+"""
 import os
 from datetime import datetime
 from dataclasses import dataclass
@@ -13,6 +18,7 @@ DB_CONNECTION_VALID = False
 
 
 class Tweets(Base):  # pylint: disable=too-few-public-methods
+    """Table structure for tweets with needed information to analyze with NLP"""
     __tablename__ = 'tweets'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     input_timestamp = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=False), nullable=False)
@@ -21,6 +27,7 @@ class Tweets(Base):  # pylint: disable=too-few-public-methods
 
 
 class TwitterUser(Base):  # pylint: disable=too-few-public-methods
+    """Table structure for twitter user with needed information to analyze with NLP"""
     __tablename__ = 'twitterUser'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     input_timestamp = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=False), nullable=False)
@@ -30,6 +37,9 @@ class TwitterUser(Base):  # pylint: disable=too-few-public-methods
 
 @dataclass
 class SQLAlchemyConnectionManager:
+    """
+    Class to handle data writes with context manager for SQLAlchemy
+    """
     connector: str
     engine: sqlalchemy.engine.Engine = None
     session_make: sqlalchemy.orm.session.sessionmaker = None
@@ -47,11 +57,20 @@ class SQLAlchemyConnectionManager:
         self.engine.dispose()
 
     def add(self, data: Tweets | TwitterUser):
+        """
+        Write and commit data to database
+        :param data: Tweets or TwitterUser class to save
+        :return:
+        """
         self.session.add(data)
         self.session.commit()
 
 
 def init() -> None:
+    """
+    Initialization function to create the database if not exists
+    :return: None
+    """
     global DB_CONNECTION_VALID  # pylint: disable=global-statement
     try:
         engine = create_engine(CONNECTOR)
@@ -71,6 +90,10 @@ def init() -> None:
 
 
 def main() -> None:
+    """
+    Main function to run db for tests
+    :return: None
+    """
     with SQLAlchemyConnectionManager(CONNECTOR) as session:
         session.add(Tweets(input_timestamp=datetime.now(),
                            tweet_url="https://blabla",
