@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+File for testing the message handling functions in message_handler.py
+"""
 import unittest
 from source.message_handler import analyze_message, decompose_tweet_url
 
 
 class AnalyzeMessageTest(unittest.TestCase):
-
-    def test_AM_00_correct_request(self):
+    """
+    Unittest class for testing the function analyze_message in message_handler.py
+    """
+    def test_am_00_correct_request(self):
+        """
+        Positive test with correct formatting in a message
+        """
         input_text = "#bot bodyshaming https://t.co/0815"
         expected_result = {"found_match": True,
                            "message": "bodyshaming",
@@ -15,7 +23,10 @@ class AnalyzeMessageTest(unittest.TestCase):
                          expected_result,
                          "Match found expected with message and tweet-url.")
 
-    def test_AM_01_wrong_key_sign(self):
+    def test_am_01_wrong_key_sign(self):
+        """
+        Negative test with wrong key word
+        """
         input_text = "!bot bodyshaming https://t.co/0815"
         expected_result = {"found_match": False,
                            "message": None,
@@ -24,7 +35,10 @@ class AnalyzeMessageTest(unittest.TestCase):
                          expected_result,
                          "No match expected because wrong command found.")
 
-    def test_AM_02_only_message_and_url(self):
+    def test_am_02_only_message_and_url(self):
+        """
+        Negative test with only message and url and no keyword
+        """
         input_text = "bodyshaming https://t.co/0815"
         expected_result = {"found_match": False,
                            "message": None,
@@ -33,7 +47,10 @@ class AnalyzeMessageTest(unittest.TestCase):
                          expected_result,
                          "No match expected because no command found.")
 
-    def test_AM_03_only_message(self):
+    def test_am_03_only_message(self):
+        """
+        Negative test with only a message and no url or keyword
+        """
         input_text = "bodyshaming"
         expected_result = {"found_match": False,
                            "message": None,
@@ -42,7 +59,10 @@ class AnalyzeMessageTest(unittest.TestCase):
                          expected_result,
                          "No match expected because only message.")
 
-    def test_AM_04_only_url(self):
+    def test_am_04_only_url(self):
+        """
+        Negative test with only url and no message or keyword
+        """
         input_text = "https://t.co/0815"
         expected_result = {"found_match": False,
                            "message": None,
@@ -51,7 +71,10 @@ class AnalyzeMessageTest(unittest.TestCase):
                          expected_result,
                          "No match expected because only url.")
 
-    def test_AM_05_only_command(self):
+    def test_am_05_only_command(self):
+        """
+        Negative test with only keyword and no message or url
+        """
         input_text = "#bot"
         expected_result = {"found_match": False,
                            "message": None,
@@ -60,7 +83,10 @@ class AnalyzeMessageTest(unittest.TestCase):
                          expected_result,
                          "No match expected because only command.")
 
-    def test_AM_06_command_and_text(self):
+    def test_am_06_command_and_text(self):
+        """
+        Negative test with keyword and message but no url
+        """
         input_text = "#bot hallo"
         expected_result = {"found_match": False,
                            "message": None,
@@ -69,7 +95,10 @@ class AnalyzeMessageTest(unittest.TestCase):
                          expected_result,
                          "No match expected because only command and message.")
 
-    def test_AM_07_command_and_url(self):
+    def test_am_07_command_and_url(self):
+        """
+        Negative test with keyword and url but no message
+        """
         input_text = "#bot https://t.co/0815"
         expected_result = {"found_match": False,
                            "message": None,
@@ -78,7 +107,10 @@ class AnalyzeMessageTest(unittest.TestCase):
                          expected_result,
                          "No match expected because only command and url.")
 
-    def test_AM_08_nothing(self):
+    def test_am_08_nothing(self):
+        """
+        Negative test with empty message
+        """
         input_text = " "
         expected_result = {"found_match": False,
                            "message": None,
@@ -89,8 +121,13 @@ class AnalyzeMessageTest(unittest.TestCase):
 
 
 class DecomposeTweetUrl(unittest.TestCase):
-
-    def test_DTU_00_correct_request(self):
+    """
+    Unittest class for testing the function decompose_tweet_url in message_handler.py
+    """
+    def test_dtu_00_correct_request(self):
+        """
+        Positive test with correct tweet-url
+        """
         input_url = "https://twitter.com/user0815/status/08157770815"
         expected_result = {"found_match": True,
                            "twitter_user_name": "user0815",
@@ -99,7 +136,10 @@ class DecomposeTweetUrl(unittest.TestCase):
                          expected_result,
                          "Match found expected with user name and tweet-id.")
 
-    def test_DTU_01_wrong_start(self):
+    def test_dtu_01_wrong_start(self):
+        """
+        negative test with wrong url pattern at the beginning
+        """
         input_url = "http://twitter.com/user0815/status/08157770815"
         expected_result = {"found_match": False,
                            "twitter_user_name": None,
@@ -108,7 +148,10 @@ class DecomposeTweetUrl(unittest.TestCase):
                          expected_result,
                          "No match expected because with wrong url start.")
 
-    def test_DTU_02_wrong_end(self):
+    def test_dtu_02_wrong_end(self):
+        """
+        negative test with wrong url pattern at the end
+        """
         input_url = "https://twitter.com/user0815/status/08157770815/d"
         expected_result = {"found_match": False,
                            "twitter_user_name": None,
@@ -117,7 +160,10 @@ class DecomposeTweetUrl(unittest.TestCase):
                          expected_result,
                          "No match expected because with wrong url end.")
 
-    def test_DTU_03_wrong_mid(self):
+    def test_dtu_03_wrong_mid(self):
+        """
+        negative test with wrong url pattern in the middle
+        """
         input_url = "https://twitter.com/user0815/wrong/08157770815"
         expected_result = {"found_match": False,
                            "twitter_user_name": None,
@@ -128,6 +174,9 @@ class DecomposeTweetUrl(unittest.TestCase):
 
 
 def run_some_tests():
+    """
+    Run function to collect all needed test in a suit and runs
+    """
     test_classes_to_run = [AnalyzeMessageTest, DecomposeTweetUrl]
 
     loader = unittest.TestLoader()
