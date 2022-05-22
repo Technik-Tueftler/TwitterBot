@@ -4,7 +4,7 @@
 File for testing the message handling functions in message_handler.py
 """
 import unittest
-from source.message_handler import analyze_message, decompose_tweet_url
+from source.message_handler import analyze_message, decompose_tweet_url, extract_expand_url
 
 
 class AnalyzeMessageTest(unittest.TestCase):
@@ -18,7 +18,7 @@ class AnalyzeMessageTest(unittest.TestCase):
         input_text = "#bot bodyshaming https://t.co/0815"
         expected_result = {"found_match": True,
                            "message": "bodyshaming",
-                           "url": "https://t.co/0815"}
+                           "short_url": "https://t.co/0815"}
         self.assertEqual(analyze_message(input_text),
                          expected_result,
                          "Match found expected with message and tweet-url.")
@@ -30,7 +30,7 @@ class AnalyzeMessageTest(unittest.TestCase):
         input_text = "!bot bodyshaming https://t.co/0815"
         expected_result = {"found_match": False,
                            "message": None,
-                           "url": None}
+                           "short_url": None}
         self.assertEqual(analyze_message(input_text),
                          expected_result,
                          "No match expected because wrong command found.")
@@ -42,7 +42,7 @@ class AnalyzeMessageTest(unittest.TestCase):
         input_text = "bodyshaming https://t.co/0815"
         expected_result = {"found_match": False,
                            "message": None,
-                           "url": None}
+                           "short_url": None}
         self.assertEqual(analyze_message(input_text),
                          expected_result,
                          "No match expected because no command found.")
@@ -54,7 +54,7 @@ class AnalyzeMessageTest(unittest.TestCase):
         input_text = "bodyshaming"
         expected_result = {"found_match": False,
                            "message": None,
-                           "url": None}
+                           "short_url": None}
         self.assertEqual(analyze_message(input_text),
                          expected_result,
                          "No match expected because only message.")
@@ -66,7 +66,7 @@ class AnalyzeMessageTest(unittest.TestCase):
         input_text = "https://t.co/0815"
         expected_result = {"found_match": False,
                            "message": None,
-                           "url": None}
+                           "short_url": None}
         self.assertEqual(analyze_message(input_text),
                          expected_result,
                          "No match expected because only url.")
@@ -78,7 +78,7 @@ class AnalyzeMessageTest(unittest.TestCase):
         input_text = "#bot"
         expected_result = {"found_match": False,
                            "message": None,
-                           "url": None}
+                           "short_url": None}
         self.assertEqual(analyze_message(input_text),
                          expected_result,
                          "No match expected because only command.")
@@ -90,7 +90,7 @@ class AnalyzeMessageTest(unittest.TestCase):
         input_text = "#bot hallo"
         expected_result = {"found_match": False,
                            "message": None,
-                           "url": None}
+                           "short_url": None}
         self.assertEqual(analyze_message(input_text),
                          expected_result,
                          "No match expected because only command and message.")
@@ -102,7 +102,7 @@ class AnalyzeMessageTest(unittest.TestCase):
         input_text = "#bot https://t.co/0815"
         expected_result = {"found_match": False,
                            "message": None,
-                           "url": None}
+                           "short_url": None}
         self.assertEqual(analyze_message(input_text),
                          expected_result,
                          "No match expected because only command and url.")
@@ -114,7 +114,7 @@ class AnalyzeMessageTest(unittest.TestCase):
         input_text = " "
         expected_result = {"found_match": False,
                            "message": None,
-                           "url": None}
+                           "short_url": None}
         self.assertEqual(analyze_message(input_text),
                          expected_result,
                          "No match expected because only command and url.")
@@ -173,11 +173,61 @@ class DecomposeTweetUrl(unittest.TestCase):
                          "No match expected because with wrong url mid.")
 
 
+class ExtractExpandUrl(unittest.TestCase):
+    """
+    Unittest class for testing the function extract_expand_url in message_handler.py
+    """
+    def test_eeu_00_correct_request(self):
+        """
+        Positive test with correct tweet-expand_url
+        """
+        content = {"text": "#bot hello https://t.co/rEy33Np1N8",
+                   "entities": {"hashtags": [{"text": "bot", "indices": [0, 4]}],
+                                "user_mentions": [],
+                                "urls": [{"url": "https://t.co/rEy33Np1N8",
+                                          "expanded_url": "https://twitter.com/../status/0815",
+                                          "display_url": "twitter.com/..",
+                                          "indices": [36, 59]}]}}
+        expected_result = "https://twitter.com/../status/0815"
+        self.assertEqual(extract_expand_url(content), expected_result,
+                         "Return expanded url")
+
+    def test_eeu_01_wrong_dict(self):
+        """
+        Negative test with key error
+        """
+        content = {"text": "#bot hello https://t.co/rEy33Np1N8",
+                   "entities": {"hashtags": [{"text": "bot", "indices": [0, 4]}],
+                                "user_mentions": [],
+                                "urlws": [{"url": "https://t.co/rEy33Np1N8",
+                                           "expanded_url": "https://twitter.com/../status/0815",
+                                           "display_url": "twitter.com/..",
+                                           "indices": [36, 59]}]}}
+        expected_result = ""
+        self.assertEqual(extract_expand_url(content), expected_result,
+                         "Dictionary has changed and key is not available.")
+
+    def test_eeu_02_wrong_index(self):
+        """
+        Negative test with index error
+        """
+        content = {"text": "#bot hello https://t.co/rEy33Np1N8",
+                   "entities": {"hashtags": [{"text": "bot", "indices": [0, 4]}],
+                                "user_mentions": [],
+                                "urlws": {"url": "https://t.co/rEy33Np1N8",
+                                           "expanded_url": "https://twitter.com/../status/0815",
+                                           "display_url": "twitter.com/..",
+                                           "indices": [36, 59]}}}
+        expected_result = ""
+        self.assertEqual(extract_expand_url(content), expected_result,
+                         "Dictionary has changed and list is not available.")
+
+
 def run_some_tests():
     """
     Run function to collect all needed test in a suit and runs
     """
-    test_classes_to_run = [AnalyzeMessageTest, DecomposeTweetUrl]
+    test_classes_to_run = [AnalyzeMessageTest, DecomposeTweetUrl, ExtractExpandUrl]
 
     loader = unittest.TestLoader()
 

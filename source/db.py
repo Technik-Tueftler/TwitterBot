@@ -4,11 +4,10 @@
 Collection of functions for handling with database.
 """
 import os
-from datetime import datetime
 from dataclasses import dataclass
 import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
 
@@ -17,13 +16,12 @@ CONNECTOR = os.getenv("DB_CONNECTOR")
 DB_CONNECTION_VALID = False
 
 
-class Tweets(Base):  # pylint: disable=too-few-public-methods
-    """Table structure for tweets with needed information to analyze with NLP"""
-    __tablename__ = 'tweets'
-    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    input_timestamp = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=False), nullable=False)
-    tweet_url = sqlalchemy.Column(sqlalchemy.String(100))
-    comment = sqlalchemy.Column(sqlalchemy.String(500))
+"""class LinkComment(Base):
+    __tablename__ = 'link_comment'
+    twitter_user_id = sqlalchemy.Column(
+        sqlalchemy.Integer, sqlalchemy.ForeignKey('twitterUser.id'), primary_key=True)
+    tweet_id = sqlalchemy.Column(
+        sqlalchemy.Integer, sqlalchemy.ForeignKey('tweet.id'), primary_key=True)"""
 
 
 class TwitterUser(Base):  # pylint: disable=too-few-public-methods
@@ -31,7 +29,33 @@ class TwitterUser(Base):  # pylint: disable=too-few-public-methods
     __tablename__ = 'twitterUser'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     input_timestamp = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=False), nullable=False)
-    twitter_user_id = sqlalchemy.Column(sqlalchemy.Integer)
+    twitter_user_id = sqlalchemy.Column(sqlalchemy.BIGINT, nullable=False)
+    comment = sqlalchemy.Column(sqlalchemy.String(500))
+    # tweet = relationship("Tweet", backref="twitterUser")
+    # tweets = relationship("Tweet", secondary="link_comment", backref=)
+
+
+class Tweet(Base):  # pylint: disable=too-few-public-methods
+    """Table structure for tweet with needed information to analyze with NLP"""
+    __tablename__ = 'tweet'
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    # user_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("twitterUser.id"))
+    tweet_id = sqlalchemy.Column(sqlalchemy.BIGINT, nullable=False)
+    input_timestamp = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=False), nullable=False)
+    tweet_url = sqlalchemy.Column(sqlalchemy.String(100), nullable=False)
+    comment = sqlalchemy.Column(sqlalchemy.String(500))
+    tweet_text = sqlalchemy.Column(sqlalchemy.String(281), nullable=False)
+    tweet_create_date = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=False), nullable=False)
+    mention_counter = sqlalchemy.Column(sqlalchemy.Integer, nullable=False, default=1)
+    # twitter_user = relationship("TwitterUser", secondary="link_comment")
+
+
+class Comments(Base):  # pylint: disable=too-few-public-methods
+    """Table structure for comments of the messages"""
+    __tablename__ = 'comments'
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    tweet_id = sqlalchemy.Column(sqlalchemy.BIGINT, nullable=False)
+    input_timestamp = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=False), nullable=False)
     comment = sqlalchemy.Column(sqlalchemy.String(500))
 
 
@@ -56,10 +80,10 @@ class SQLAlchemyConnectionManager:
         self.session.close()
         self.engine.dispose()
 
-    def add(self, data: Tweets | TwitterUser):
+    def add(self, data: Tweet | TwitterUser):
         """
         Write and commit data to database
-        :param data: Tweets or TwitterUser class to save
+        :param data: Tweet or TwitterUser class to save
         :return:
         """
         self.session.add(data)
@@ -94,11 +118,18 @@ def main() -> None:
     Main function to run db for tests
     :return: None
     """
+    from datetime import datetime
     with SQLAlchemyConnectionManager(CONNECTOR) as session:
-        session.add(Tweets(input_timestamp=datetime.now(),
-                           tweet_url="https://blabla",
-                           comment="Wir sind geile Hühner"))
+        session.add(TwitterUser(input_timestamp=datetime.now(),
+                                twitter_user_id=1234))
+    with SQLAlchemyConnectionManager(CONNECTOR) as session:
+        session.add(Tweet(user_id=1,
+                           input_timestamp=datetime.now(),
+                           tweet_url="https://",
+                           tweet_text="Hallo",
+                           tweet_create_date=datetime.now()))
 
 
 if __name__ == "__main__":
+    init()
     main()

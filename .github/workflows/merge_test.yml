@@ -1,4 +1,4 @@
-name: Pylint
+name: Pylint/Unittest
 
 on: [pull_request]
 
