@@ -54,14 +54,15 @@ class Tweet(Base):  # pylint: disable=too-few-public-methods
     comments = relationship("Comment",
                             secondary=tweets_link_comments,
                             back_populates="tweets")
+
     def __repr__(self):
         return f"<Tweet-ID {self.tweet_id}"
+
 
 class Comment(Base):  # pylint: disable=too-few-public-methods
     """Table structure for comments of tweets"""
     __tablename__ = 'comments'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    tweet_id = sqlalchemy.Column(sqlalchemy.BIGINT, nullable=False)
     input_timestamp = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=False), nullable=False)
     comment = sqlalchemy.Column(sqlalchemy.String(500))
     tweets = relationship("Tweet",
