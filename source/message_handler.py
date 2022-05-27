@@ -91,6 +91,33 @@ def get_all_matched_messages(api_endpoint: tweepy.API) -> list:
     return matched_messages
 
 
+def get_tweet_status(api: tweepy.API, tweet_id: str) -> dict:
+    """
+    name: Technik_Tueftler, screen_name: TTueftler
+    :param api:
+    :param tweet_id:
+    :return:
+    """
+    tweet_status_data = {"author_user_id": None,
+                         "author_user_name": None,
+                         "author_user_screen_name": None,
+                         "created_at": None,
+                         "text": None
+                         }
+    try:
+        tweet_status = api.get_status(tweet_id)
+        tweet_status_data["author_user_id"] = tweet_status.user.id
+        tweet_status_data["author_user_name"] = tweet_status.user.name
+        tweet_status_data["author_user_screen_name"] = tweet_status.user.screen_name
+        tweet_status_data["created_at"] = tweet_status.created_at
+        tweet_status_data["text"] = tweet_status.text
+
+    except tweepy.errors.NotFound as _:
+        print(f"Tweet mit der ID: {tweet_id} nicht mehr vorhanden.")
+    finally:
+        return tweet_status_data  # pylint: disable=lost-exception
+
+
 def message_handler(communication_data: dict) -> None:
     """
     Called regularly fetch messages and save content
@@ -107,35 +134,13 @@ def message_handler(communication_data: dict) -> None:
         api.verify_credentials()
         results_message = get_all_matched_messages(api)
         for message_content in results_message:
-            expand_url = extract_expand_url(message_content)
-            results_tweet = decompose_tweet_url(expand_url)
-            print(results_tweet)
-            tweet_status = api.get_status(results_tweet["tweet_id"])
-            author_user_id = tweet_status.user.id
-            with db.SQLAlchemyConnectionManager(db.CONNECTOR) as conn:
-                twitter_user = conn.session.query(db.TwitterUser).\
-                    filter(db.TwitterUser.twitter_user_id == author_user_id).first()
-                if twitter_user is None:
-                    print("Twitter user existiert noch nicht")
-                    """conn.add(db.TwitterUser(input_timestamp=datetime.datetime.now(),
-                                            twitter_user_id=author_user_id))"""
-
-                """tweet = conn.session.query(db.Tweets). \
-                    filter(db.Tweets.tweet_id == results_tweet["tweet_id"]).first()
-                if tweet is None:
-                    conn.add(db.Tweets(input_timestamp=datetime.datetime.now(),
-                                       user_id=author_user_id,
-                                       tweet_id=results_tweet["tweet_id"],
-                                       tweet_url=expand_url,
-                                       comment=analyze_message(message_content["text"])["message"]))
-
-                tweet_text = sqlalchemy.Column(sqlalchemy.String(281), nullable=False)
-                tweet_create_date = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=False),
-                                                      nullable=False)
-                mention_counter = sqlalchemy.Column(sqlalchemy.Integer, nullable=False, default=1)
-
-                else:
-                    tweet.mention_counter += 1"""
+            tweet_data = {"comment": analyze_message(message_content["text"])["message"],
+                          "expand_url": extract_expand_url(message_content)}
+            tweet_id = decompose_tweet_url(tweet_data["expand_url"])["tweet_id"]
+            tweet_data["tweet_id"] = tweet_id
+            tweet_data |= get_tweet_status(api, tweet_id)
+            db.add_tweet(tweet_data)
+            print(tweet_data)
 
     except tweepy.TooManyRequests as err:
         print(err)

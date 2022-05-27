@@ -12,7 +12,10 @@ from sqlalchemy.orm import (
     relationship
 )
 from sqlalchemy import create_engine
-from sqlalchemy_utils import database_exists, create_database
+from sqlalchemy_utils import (
+    database_exists,
+    create_database
+)
 
 Base = declarative_base()
 CONNECTOR = os.getenv("DB_CONNECTOR")
@@ -27,15 +30,39 @@ tweets_link_comments = sqlalchemy.Table(
 )
 
 
+class UserNameAtTime(Base):  # pylint: disable=too-few-public-methods
+    """Table structure for twitter user name combined with timestamp for history"""
+    __tablename__ = 'userNameAtTime'
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    user_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("twitterUser.id"))
+    input_timestamp = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=False), nullable=False)
+    twitter_user_name = sqlalchemy.Column(sqlalchemy.String(500))
+
+    def __repr__(self):
+        return f"<User name: {self.twitter_user_screen_name}"
+
+
+class UserScreenNameAtTime(Base):  # pylint: disable=too-few-public-methods
+    """Table structure for twitter user screen name combined with timestamp for history"""
+    __tablename__ = 'userScreenNameAtTime'
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    user_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey("twitterUser.id"))
+    input_timestamp = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=False), nullable=False)
+    twitter_user_screen_name = sqlalchemy.Column(sqlalchemy.String(500))
+
+    def __repr__(self):
+        return f"<User screen name: {self.twitter_user_screen_name}"
+
+
 class TwitterUser(Base):  # pylint: disable=too-few-public-methods
     """Table structure for twitter user with needed information to analyze with NLP"""
     __tablename__ = 'twitterUser'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    input_timestamp = sqlalchemy.Column(sqlalchemy.TIMESTAMP(timezone=False), nullable=False)
     twitter_user_id = sqlalchemy.Column(sqlalchemy.BIGINT, nullable=False)
-    twitter_user_name = sqlalchemy.Column(sqlalchemy.String(500))
     comment = sqlalchemy.Column(sqlalchemy.String(500))
     tweets = relationship("Tweet", backref="twitterUser")
+    user_names = relationship("UserNameAtTime", backref="twitterUser")
+    user_screen_names = relationship("UserScreenNameAtTime", backref="twitterUser")
 
     def __repr__(self):
         return f"<User-ID {self.twitter_user_id}"
@@ -104,6 +131,37 @@ class SQLAlchemyConnectionManager:
         self.session.commit()
 
 
+def add_tweet(data: dict) -> None:
+    """
+    Function to add tweet and user data to database.
+    :param data: information as a dictionary, which must be stored in the database.
+    :return: None
+    """
+    with SQLAlchemyConnectionManager(CONNECTOR) as conn:
+        check_tweet = conn.session.query(Tweet). \
+            filter(Tweet.tweet_id == data["tweet_id"]).first()
+        if check_tweet is not None:
+            return
+        twitter_user = conn.session.query(TwitterUser).\
+            filter(TwitterUser.twitter_user_id == data["author_user_id"]).first()
+        if twitter_user is None:
+            twitter_user = TwitterUser(twitter_user_id=data["author_user_id"])
+            conn.add(twitter_user)
+            conn.session.commit()
+        tweet = Tweet(tweet_id=data["tweet_id"],
+                      tweet_url=data["expand_url"],
+                      tweet_text=data["text"],
+                      tweet_create_date=data["created_at"])
+        tweet_comment = conn.session.query(Comment).\
+            filter(Comment.comment == data["comment"]).first()
+        if tweet_comment is None:
+            tweet_comment = Comment(comment=data["comment"])
+            conn.session.commit()
+        tweet.comments.append(tweet_comment)
+        twitter_user.tweets.append(tweet)
+        conn.session.commit()
+
+
 def init() -> None:
     """
     Initialization function to create the database if not exists
@@ -132,79 +190,6 @@ def main() -> None:
     Main function to run db for tests
     :return: None
     """
-    from datetime import datetime
-    """Twitter user hinzufügen"""
-    """with SQLAlchemyConnectionManager(CONNECTOR) as conn:
-        conn.add(TwitterUser(input_timestamp=datetime.now(),
-                             twitter_user_id=1,
-                             twitter_user_name="TeTü"))"""
-
-    """Tweet hinzufügen mit Hilfe des TwitterUsers"""
-    """with SQLAlchemyConnectionManager(CONNECTOR) as conn:
-        tweet1 = Tweet(tweet_id=777,
-                       tweet_url="https://test",
-                       tweet_text="Hallo",
-                       tweet_create_date=datetime.now())
-        twitter_user = conn.session.query(TwitterUser).\
-            filter(TwitterUser.twitter_user_id == 1234).first()
-        print(twitter_user.id)
-        twitter_user.tweets.append(
-            tweet1
-        )
-        conn.session.commit()"""
-
-    """Tweet hinzufügen und an TwitterUser knüpfen, Kommentar erzeugen und an Tweet hängen"""
-    """with SQLAlchemyConnectionManager(CONNECTOR) as conn:
-        tweet1 = Tweet(tweet_id=888,
-                       tweet_url="https://test",
-                       tweet_text="Hallo",
-                       tweet_create_date=datetime.now())
-        comment1 = Comment(tweet_id=999,
-                           comment="Cool es funzt")
-        tweet1.comments.append(
-            comment1
-        )
-        twitter_user = conn.session.query(TwitterUser).\
-            filter(TwitterUser.twitter_user_id == 1234).first()
-        twitter_user.tweets.append(
-            tweet1
-        )
-        conn.session.commit()"""
-
-    """Kommentare erstellen und an einen Tweet hängen"""
-    """with SQLAlchemyConnectionManager(CONNECTOR) as conn:
-        comment1 = Comment(tweet_id=66,
-                           comment="ein weiteres Kommentar")
-        comment2 = Comment(tweet_id=77,
-                           comment="und noch ein weiteres Kommentar")
-        tweet = conn.session.query(Tweet).filter(Tweet.id == 2).first()
-        tweet.comments.append(comment1)
-        tweet.comments.append(comment2)
-        conn.session.commit()"""
-
-    """Tweet erstellen und an eine Kommentar hängen"""
-    """with SQLAlchemyConnectionManager(CONNECTOR) as conn:
-        tweet1 = Tweet(tweet_id=222,
-                       user_id=1,
-                       tweet_url="https://test",
-                       tweet_text="Hallo, ist es jetzt many to many?",
-                       tweet_create_date=datetime.now())
-        comment = conn.session.query(Comment).filter(Comment.id == 1).first()
-        comment.tweets.append(tweet1)
-        conn.session.commit()"""
-
-    """Suchen aller Kommentaren die an einem Tweet hängen"""
-    """with SQLAlchemyConnectionManager(CONNECTOR) as conn:
-        tweet = conn.session.query(Tweet).filter(Tweet.id == 2).first()
-        print(tweet.tweet_id)
-        print(tweet.comments)"""
-
-    """Lösche Verbindung zwischen Tweet und Kommentar"""
-    with SQLAlchemyConnectionManager(CONNECTOR) as conn:
-        tweet = conn.session.query(Tweet).filter(Tweet.id == 2).first()
-        comment = conn.session.query(Comment).filter(Comment.id == 4).first()
-        tweet.comments.remove(comment)
-        conn.session.commit()
 
 
 if __name__ == "__main__":
