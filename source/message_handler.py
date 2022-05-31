@@ -24,6 +24,9 @@ MAX_PAGES = 1
 
 @dataclass
 class TwitterMessage:
+    """
+    Class to handle Twitter messages and process
+    """
     message_id: str
     message_timestamp: datetime.datetime
     sender_id: str
@@ -88,7 +91,12 @@ def get_all_matched_messages(api_endpoint: tweepy.API) -> list:
     :return: list with messages
     """
     matched_messages = [
-        TwitterMessage(message_id=message.id, message_timestamp=message.created_timestamp,sender_id=message.message_create["sender_id"], message_data=message.message_create["message_data"])
+        TwitterMessage(
+            message_id=message.id,
+            message_timestamp=message.created_timestamp,
+            sender_id=message.message_create["sender_id"],
+            message_data=message.message_create["message_data"],
+        )
         #  message.message_create["message_data"]
         for page in tweepy.Cursor(
             api_endpoint.get_direct_messages, count=MAX_TWEETS_PER_PAGE
@@ -147,7 +155,9 @@ def message_handler(communication_data: dict) -> None:
         results_message = get_all_matched_messages(api)
         for message_content in results_message:
             tweet_data = {
-                "comment": analyze_message(message_content.message_data["text"])["message"],
+                "comment": analyze_message(message_content.message_data["text"])[
+                    "message"
+                ],
                 "expand_url": extract_expand_url(message_content.message_data),
             }
             decomposed_url = decompose_tweet_url(tweet_data["expand_url"])
