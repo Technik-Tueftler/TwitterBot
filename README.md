@@ -1,4 +1,6 @@
 # TwitterBot
+[![Pylint/Unittest](https://github.com/Technik-Tueftler/TwitterBot/actions/workflows/merge_test.yml/badge.svg)](https://github.com/Technik-Tueftler/TwitterBot/actions/workflows/merge_test.yml)  
+
 Das Ziel des TwitterBots ist es, später auf Falschinformation, Diskriminierung und Rassismus
 automatisch zu reagieren und eine eingelernte Antwort zu schreiben. Eine weitere Funktion soll das
 Einteilen in politische Richtungen für Benutzer sein. Damit soll versucht werden Sarkasmus zu 
