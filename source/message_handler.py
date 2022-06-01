@@ -19,7 +19,7 @@ MESSAGE_PATTERN = r"^#?bot\s(.*)\s(https:.*)"
 # MESSAGE_PATTERN = r"^#?user\s(.*)\s(https:.*)"
 TWEET_URL_PATTERN = r"^(https://twitter.com/)(.+)(/status/)(\d+)$"
 MAX_TWEETS_PER_PAGE = 10
-MAX_PAGES = 1
+MAX_PAGES = 10
 
 
 @dataclass
@@ -27,6 +27,7 @@ class TwitterMessage:
     """
     Class to handle Twitter messages and process
     """
+
     message_id: str
     message_timestamp: datetime.datetime
     sender_id: str
@@ -97,7 +98,6 @@ def get_all_matched_messages(api_endpoint: tweepy.API) -> list:
             sender_id=message.message_create["sender_id"],
             message_data=message.message_create["message_data"],
         )
-        #  message.message_create["message_data"]
         for page in tweepy.Cursor(
             api_endpoint.get_direct_messages, count=MAX_TWEETS_PER_PAGE
         ).pages(MAX_PAGES)
@@ -152,25 +152,26 @@ def message_handler(communication_data: dict) -> None:
     api = tweepy.API(auth, wait_on_rate_limit=True)
     try:
         api.verify_credentials()
-        results_message = get_all_matched_messages(api)
-        for message_content in results_message:
+        matched_message = get_all_matched_messages(api)
+        for message in matched_message:
             tweet_data = {
-                "comment": analyze_message(message_content.message_data["text"])[
-                    "message"
-                ],
-                "expand_url": extract_expand_url(message_content.message_data),
+                "comment": analyze_message(message.message_data["text"])["message"],
+                "expand_url": extract_expand_url(message.message_data),
             }
             decomposed_url = decompose_tweet_url(tweet_data["expand_url"])
             tweet_data["tweet_id"] = decomposed_url["tweet_id"]
             tweet_data |= get_tweet_status(api, decomposed_url["tweet_id"])
-            print(tweet_data)
+
             if tweet_data["author_user_id"] is not None:
                 db.add_tweet(tweet_data)
                 db.check_and_update_user_names(tweet_data)
+                print("Existierender Tweet aufgenommen: " + tweet_data["expand_url"])
             else:
                 db.add_deleted_tweet(
                     decomposed_url, tweet_data["expand_url"], tweet_data["comment"]
                 )
+                print("Gelöschter Tweet aufgenommen: " + tweet_data["expand_url"])
+            api.delete_direct_message(message.message_id)
 
     except tweepy.TooManyRequests as err:
         print(err)
