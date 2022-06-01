@@ -278,14 +278,14 @@ def add_tweet(data: dict) -> None:
             tweet_text=data["text"],
             tweet_create_date=data["created_at"],
         )
-        lower_case_comment = data["comment"].lower()
+        lower_case_comment_limited = data["comment"].lower()[:500]
         tweet_comment = (
             conn.session.query(Comment)
-            .filter(Comment.comment == lower_case_comment)
+            .filter(Comment.comment == lower_case_comment_limited)
             .first()
         )
         if tweet_comment is None:
-            tweet_comment = Comment(comment=lower_case_comment)
+            tweet_comment = Comment(comment=lower_case_comment_limited)
             conn.session.commit()
         tweet.comments.append(tweet_comment)
         twitter_user.tweets.append(tweet)
