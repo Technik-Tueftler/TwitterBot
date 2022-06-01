@@ -12,7 +12,10 @@ from dataclasses import dataclass
 import re
 import schedule
 import tweepy
-from source import db
+try:
+    import db
+except ImportError as _:
+    from . import db
 
 MESSAGE_PATTERN = r"^#?bot\s(.*)\s(https:.*)"
 # MESSAGE_PATTERN = r"^#?tweet\s(.*)\s(https:.*)"
