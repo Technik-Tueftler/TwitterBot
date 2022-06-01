@@ -235,5 +235,5 @@ if __name__ == "__main__":
         print("Start Twitter message handler")
         verified_env_data = check_and_verify_env_variables()
         if verified_env_data["all_verified"] is not False:
-            # main(verified_env_data)
-            message_handler(verified_env_data)
+            main(verified_env_data)
+            # message_handler(verified_env_data)
