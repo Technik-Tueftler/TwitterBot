@@ -6,6 +6,8 @@ Console application to run database query's depends on user input
 
 from rich.console import Console
 from rich.table import Table
+from rich.tree import Tree
+from rich import print as print_rich
 from source import db
 
 
@@ -16,7 +18,7 @@ def close() -> None:
     """
 
 
-def count_all_tweets_from_user() -> None:
+def user_summary() -> None:
     """
     Print numbers of tweets for each registered Twitter user and number of renaming.
     :return: None
@@ -24,7 +26,6 @@ def count_all_tweets_from_user() -> None:
     with db.SQLAlchemyConnectionManager(db.CONNECTOR) as conn:
         users = conn.session.query(db.TwitterUser).all()
         table = Table(title="Übersicht Anzahl von Tweets")
-
         table.add_column("Name", style="magenta")
         table.add_column("Tweets", justify="right", style="green")
         table.add_column("Namensänderung", justify="right", style="green")
@@ -32,12 +33,40 @@ def count_all_tweets_from_user() -> None:
         for user in users:
             name = str(user.user_screen_names[-1].twitter_user_screen_name)
             count_tweets = str(len(user.tweets))
-            count_name = str(len(user.user_names))
-            count_screen_name = str(len(user.user_screen_names))
+            count_name = str(len(user.user_names)-1)
+            count_screen_name = str(len(user.user_screen_names)-1)
             table.add_row(name, count_tweets, count_name, count_screen_name)
 
         console = Console()
         console.print(table, justify="center")
+
+
+def data_summary() -> None:
+    """
+    Print general information and statistics
+    :return: None
+    """
+    print()
+    with db.SQLAlchemyConnectionManager(db.CONNECTOR) as conn:
+        project_tree = Tree("Allgemeine Daten")
+        count_user = str(conn.session.query(db.TwitterUser).count())
+        count_comments = str(conn.session.query(db.Comment).count())
+        count_del_tweets = str(conn.session.query(db.DeletedTweet).count())
+        count_tweets = str(conn.session.query(db.Tweet).count())
+        users = conn.session.query(db.TwitterUser).all()
+        sum_all_renames = -(len(users))
+        sum_all_screen_renames = -(len(users))
+        for user in users:
+            sum_all_renames += len(user.user_names)
+            sum_all_screen_renames += len(user.user_screen_names)
+        project_tree.add(f"User: {count_user}")
+        project_tree.add(f"Kommentare: {count_comments}")
+        project_tree.add(f"Tweets: {count_tweets}")
+        project_tree.add(f"Gelöschte Tweets: {count_del_tweets}")
+        project_tree.add(f"Namenswechsel: {sum_all_renames}")
+        project_tree.add(f"Anzeigenamenswechsel: {sum_all_screen_renames}")
+        print_rich(project_tree)
+    print()
 
 
 def print_menu(menu: dict) -> None:
@@ -82,8 +111,8 @@ def main() -> None:
     Main function to run the console app
     :return:
     """
-    menu = {1: "Zähle alle Tweets", 2: "Tweet löschen", 10: "Beende"}
-    commands = {1: count_all_tweets_from_user, 2: delete_tweet, 10: close}
+    menu = {1: "Datenübersicht", 2: "Benutzerübersicht", 3: "Tweet löschen", 10: "Beende"}
+    commands = {1: data_summary, 2: user_summary, 3: delete_tweet, 10: close}
     while True:
         print_menu(menu)
         option = int(input("Option wählen: "))
