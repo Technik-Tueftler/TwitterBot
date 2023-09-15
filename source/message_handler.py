@@ -18,8 +18,8 @@ MESSAGE_PATTERN = r"^#?bot\s(.*)\s(https:.*)"
 # MESSAGE_PATTERN = r"^#?tweet\s(.*)\s(https:.*)"
 # MESSAGE_PATTERN = r"^#?user\s(.*)\s(https:.*)"
 TWEET_URL_PATTERN = r"^(https://twitter.com/)(.+)(/status/)(\d+)$"
-MAX_TWEETS_PER_PAGE = 10
-MAX_PAGES = 10
+MAX_TWEETS_PER_PAGE = 20
+MAX_PAGES = 20
 
 
 @dataclass
@@ -235,5 +235,5 @@ if __name__ == "__main__":
         print("Start Twitter message handler")
         verified_env_data = check_and_verify_env_variables()
         if verified_env_data["all_verified"] is not False:
-            main(verified_env_data)
-            # message_handler(verified_env_data)
+            # main(verified_env_data)
+            message_handler(verified_env_data)

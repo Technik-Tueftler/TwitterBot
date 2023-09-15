@@ -76,7 +76,7 @@ def print_menu(menu: dict) -> None:
     :return: None
     """
     for key, value in menu.items():
-        print(f"{key:>2}: {value}")
+        print(f"{key:>2}: {value[0]}")
 
 
 def delete_tweet() -> None:
@@ -111,12 +111,14 @@ def main() -> None:
     Main function to run the console app
     :return:
     """
-    menu = {1: "Datenübersicht", 2: "Benutzerübersicht", 3: "Tweet löschen", 10: "Beende"}
-    commands = {1: data_summary, 2: user_summary, 3: delete_tweet, 10: close}
+    menu = {1: ["Datenübersicht", data_summary],
+            2: ["Benutzerübersicht", user_summary],
+            3: ["Tweet löschen", delete_tweet],
+            0: ["Beende", close]}
     while True:
         print_menu(menu)
         option = int(input("Option wählen: "))
-        command = commands.get(option)
+        command = menu.get(option)[1]
         if command is close:
             break
         command()
